@@ -1,0 +1,41 @@
+- name: Install MariaDB server and dependencies
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+    state: latest
+  with_items:
+    - mariadb-server
+    - python3-mysqldb
+
+- name: Ensure MariaDB service is running and enabled
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Create WordPress database
+  mysql_db:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    name: "{{ wp_db_name }}"
+    state: present
+
+- name: Create WordPress user
+  mysql_user:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    name: "{{ wp_db_user }}"
+    password: "{{ wp_db_password }}"
+    host: "%"
+    priv: "{{ wp_db_name }}.*:ALL"
+    state: present
+
+- name: Ensure mariadb bind-address is set to the desired IP
+  lineinfile:
+    path: /etc/mysql/mariadb.conf.d/50-server.cnf
+    regexp: '^bind-address\s*='
+    line: 'bind-address = {{ wp_db_host }}'
+    state: present
+
+- name: Restart MariaDB
+  command: sudo systemctl restart mariadb

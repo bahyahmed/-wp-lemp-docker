@@ -1,0 +1,27 @@
+- name: create mounted nginx directory
+  file:
+    path: /var/www/html/
+    state: directory
+
+- name: get wordpress files
+  unarchive:
+    src: https://{{ app_name }}.org/latest.tar.gz
+    dest: "/var/www/html"
+    owner: www-data
+    group: www-data
+    mode: 0755
+    remote_src: yes  #cause i downloading a file from remote machine
+
+- name: set permissions for files
+  command: >
+    sudo find /var/www/html/{{ app_name }} -type f -exec chmod 644 {} \;
+
+- name: Delete wp-config-sample.php
+  ansible.builtin.file:
+    path: /var/www/html/wordpress/wp-config-sample.php
+    state: absent
+
+- name: copy wp-config.php
+  template:
+    src: "wp-config.php.j2"
+    dest: "/var/www/html/wordpress/wp-config.php"
